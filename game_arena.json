@@ -1,0 +1,39 @@
+{
+    "host": "gtirouter.dsic.upv.es",
+    "manager": "manager_mfabgom",
+    "manager_password": "secret",
+    "service": "service_mfabgom",
+    "service_password": "secret",
+    "axis": [
+		{
+            "rank": "BDISoldier",
+            "name": "fighter_mfabgom",
+            "password": "secret",
+            "amount": 20,
+            "asl": "fighter.asl"
+        },
+        {
+            "rank": "BDISoldier",
+            "name": "survivor_mfabgom",
+            "password": "secret",
+            "amount": 1,
+            "asl": "myfighter.asl"
+        }
+    ],
+     "allied": [
+        {
+            "rank": "invencibleM.BDIMInvencible",
+            "name": "medic_mfabgom",
+            "password": "secret",
+            "amount": 1,
+            "asl": "medic_arena.asl"
+        }, 
+        {
+            "rank": "invencibleF.BDIFInvencible",
+            "name": "fieldop_mfabgom",
+            "password": "secret",
+            "amount": 3,
+            "asl": "fieldop_arena.asl"
+        }
+    ]
+}
