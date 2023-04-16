@@ -6,21 +6,21 @@ turn_angle(1.25);
 ITEM STRUCTURE: ID, Time, Position, Value
 Value is Health recovery for HP, Ammo recovery for AP, and remaining Health for Enemies
 */
-known_health_pack()
-known_ammo_pack()
-known_enemy()
 
 +flag(F): team(200)
   <-
-  .create_control_points(F,100,3,C);
-  +control_points(C);
-  //.wait(5000);
-  .length(C,L);
-  +total_control_points(L);
-  +patrolling;
-  +patroll_point(0);
-  .print("Got control points:", C).
+  ?center(C);
+  .goto(C);
+  .print("Moving towards the center: ", C);
+  +rotating.
 
++rotating:
+  <-
+  -rotating;
+  .wait(1000);
+  ?turn_angle(A);
+  .turn(A);
+  +rotating.
 
 +target_reached(T): patrolling & team(200)
   <-
@@ -40,11 +40,20 @@ known_enemy()
   +patroll_point(0).
  
 /*  
-  +enemies_in_fov(ID,Type,Angle,Distance,Health,Position)
+  +enemies_in_fov(ID, Type, Angle, Distance, Health, Position)
     <-
     .shoot(3,Position).
 */
   
-+friends_in_fov(ID,Type,Angle,Distance,Health,Position)
++friends_in_fov(ID, Type, Angle, Distance, Health, Position)
   <-
-  .shoot(3,Position).
+  .seen_enemy(ID, Type, Health, Position);
+  if ()
+
++packs_in_fov(ID, Type, Angle, Distance, Value, Position)
+  <-
+  .seen_pack(ID, Type, Value, Position).
+
++threshold_health(HP)
+  <-
+  +fleeing
