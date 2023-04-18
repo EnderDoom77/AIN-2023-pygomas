@@ -107,10 +107,10 @@ class BDISurvivalist(BDISoldier):
                 w = max(0.0, MEMORY_TERM - (now - enemy.last_seen)) * enemy.health # WEIGHT
                 sum_weights += w
                 danger_peak = vec_addmult(danger_peak, enemy.position, w)
-            flight_direction = vec_addmult(here, danger_peak, -1 / sum_weights)
+            flight_direction = vec_normalize(vec_addmult(here, danger_peak, -1 / sum_weights))
             # Flight direction is a vector pointing to the safest position
             # Target contains the tentative target location
-            final_target = get_walkable_point_along_ray(here, vec_normalize(flight_direction))
+            final_target = get_walkable_point_along_ray(here, flight_direction)
             return final_target            
             
         @actions.add(".seen_enemy", 5)
