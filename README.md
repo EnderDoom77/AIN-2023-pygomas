@@ -24,7 +24,7 @@ The goal of the agent is to damage and kill its target.
 This state has the following transition conditions:
 * If the agent's ammunition drops to 0, it transitions to the reset state.
 * If the agent's health drops below a threshold and the target's health is not very low, it transitions to the fleeing state.
-* If the target is successfully killed, it transitions to the reset state.
+* If the target is successfully killed or we lose track of it, it transitions to the reset state.
 
 ### State - Fetching
 The goal of the agent is to collect a specific pack signaled by its target.

@@ -1,7 +1,7 @@
 // Initial Beliefs
-center([128, 0, 128])
-damage_factor(2)
-turn_angle(1.25);
+center([128, 0, 128]).
+damage_factor(2).
+turn_angle(1.25).
 /*
 ITEM STRUCTURE: ID, Time, Position, Value
 Value is Health recovery for HP, Ammo recovery for AP, and remaining Health for Enemies
@@ -9,37 +9,50 @@ Value is Health recovery for HP, Ammo recovery for AP, and remaining Health for 
 
 +flag(F): team(200)
   <-
+  +rotating;
+  +centralize.
+
++centralize:
+  <-
   ?center(C);
   .goto(C);
   .print("Moving towards the center: ", C);
-  +rotating;
-  +state(centralizing).
+  -+state(centralizing);
+  -centralize.
+
++flee:
+  <-
+  .safest_point(P);
+  .print("Fleeing towards ", P);
+  -+state(fleeing);
+  -flee;
 
 +rotating:
   <-
-  -rotating;
-  .wait(1000);
   ?turn_angle(A);
   .turn(A);
-  +rotating.
+  .wait(1000);
+  if (rotating) then {
+    -+rotating;
+  }.
 
-+target_reached(T): patrolling & team(200)
++target_reached(T): state(centralizing)
   <-
-  ?patroll_point(P);
-  -+patroll_point(P+1);
+  -+rotating;
   -target_reached(T).
 
-+patroll_point(P): total_control_points(T) & P<T
++target_reached(T): state(fetching) & fetch_target(FT)
   <-
-  ?control_points(C);
-  .nth(P,C,A);
-  .goto(A).
+  -fetch_target(FT);
+  +reset_state;
+  -target_reached(T).
 
-+patroll_point(P): total_control_points(T) & P==T
++target_reached(T): state(fleeing)
   <-
-  -patroll_point(P);
-  +patroll_point(0).
- 
+  .safest_point(P);
+  .print("Fleeing towards ", P);
+  -target_reached(T).
+
 /*  
   +enemies_in_fov(ID, Type, Angle, Distance, Health, Position)
     <-
@@ -50,12 +63,20 @@ Value is Health recovery for HP, Ammo recovery for AP, and remaining Health for 
   <-
   .seen_enemy(ID, Type, Health, Position);
   -friends_in_fov(ID, Type, Angle, Distance, Health, Position);
-  
+  +threat(ID, Health, Position).
 
 +packs_in_fov(ID, Type, Angle, Distance, Value, Position)
   <-
-  .seen_pack(ID, Type, Value, Position).
+  .seen_pack(ID, Type, Value, Position);
+  -packs_in_fov(ID, Type, Angle, Distance, Value, Position);
+  .print("Detecting a pack of type ", Type, " at position ", Position, " with value ", Value);
+  +pack(ID, Type, Value, Position)
 
-+threshold_health(HP)
++threshold_health(HP) : not state(fetching)
   <-
-  +fleeing
+  +flee.
+
++threshold_health(HP) : state(fetching) & fetching(ID, 103, Pos)
+  <-
+  -fetching(ID, 103, Pos);
+  +reset.
