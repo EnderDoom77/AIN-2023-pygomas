@@ -48,7 +48,6 @@ Value is Health recovery for HP, Ammo recovery for AP, and remaining Health for 
 +friends_in_fov(ID, Type, Angle, Distance, Health, Position)
   <-
   .seen_enemy(ID, Type, Health, Position);
-  if ()
 
 +packs_in_fov(ID, Type, Angle, Distance, Value, Position)
   <-

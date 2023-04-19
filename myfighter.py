@@ -62,35 +62,36 @@ class BDISurvivalist(BDISoldier):
         self.rng = random.Random()
         self.enemy_memory : Dict[int, Troop] = dict()
         
+    def random_point_around(self, point: Vector3, min_distance = 0.0, max_distance = float.MAX):
+        return _random_point_around(point, min_distance, max_distance, self.rng)
+    
+    def get_walkable_point_along_ray(self, pos: Vector3, direction: Vector3) -> Vector3:
+        target = pos
+        attempts = 0
+        point_stack = []
+        # Attempt to find walkable points at equal intervals along the ray
+        while attempts < MAX_FLIGHT_ATTEMPTS:
+            target = [target[i] + d * FLIGHT_DISTANCE for i,d in enumerate(direction)]
+            if self.check_static_position(target):
+                return target
+            point_stack.insert(0, target)
+            attempts += 1
+        
+        # Attempt to find walkable points AROUND previously attempted points, trying the furthest points first
+        for prev_target in point_stack:
+            spread_attempts = 0
+            while spread_attempts < MAX_FLIGHT_SPREAD_ATTEMPTS:
+                target = self.random_point_around(prev_target, FLIGHT_SPREAD_DISTANCE_MIN, FLIGHT_SPREAD_DISTANCE_MAX)
+                if self.check_static_position(target):
+                    return target
+                spread_attempts += 1
+                
+        # If a generation along the ray fails, fallback to a random point within 50 units
+        return self.generate_escape_position()
+    
     def add_custom_actions(self, actions : Actions):
         super().add_custom_actions(actions)
         
-        def random_point_around(self, point: Vector3, min_distance = 0.0, max_distance = float.MAX):
-            return _random_point_around(point, min_distance, max_distance, self.rng)
-        
-        def get_walkable_point_along_ray(pos: Vector3, direction: Vector3) -> Vector3:
-            target = pos
-            attempts = 0
-            point_stack = []
-            # Attempt to find walkable points at equal intervals along the ray
-            while attempts < MAX_FLIGHT_ATTEMPTS:
-                target = [target[i] + d * FLIGHT_DISTANCE for i,d in enumerate(direction)]
-                if self.check_static_position(target):
-                    return target
-                point_stack.insert(0, target)
-                attempts += 1
-            
-            # Attempt to find walkable points AROUND previously attempted points, trying the furthest points first
-            for prev_target in point_stack:
-                spread_attempts = 0
-                while spread_attempts < MAX_FLIGHT_SPREAD_ATTEMPTS:
-                    target = self.random_point_around(prev_target, FLIGHT_SPREAD_DISTANCE_MIN, FLIGHT_SPREAD_DISTANCE_MAX)
-                    if self.check_static_position(target):
-                        return target
-                    spread_attempts += 1
-                    
-            # If a generation along the ray fails, fallback to a random point within 50 units
-            return self.generate_escape_position()
         
         @actions.add_function(".now", ())
         def _get_now():
@@ -110,7 +111,7 @@ class BDISurvivalist(BDISoldier):
             flight_direction = vec_normalize(vec_addmult(here, danger_peak, -1 / sum_weights))
             # Flight direction is a vector pointing to the safest position
             # Target contains the tentative target location
-            final_target = get_walkable_point_along_ray(here, flight_direction)
+            final_target = self.get_walkable_point_along_ray(here, flight_direction)
             return final_target            
             
         @actions.add(".seen_enemy", 5)
