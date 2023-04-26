@@ -2,6 +2,7 @@
 center([128, 0, 128]).
 damage_factor(2).
 turn_angle(1.25).
+
 /*
 ITEM STRUCTURE: ID, Time, Position, Value
 Value is Health recovery for HP, Ammo recovery for AP, and remaining Health for Enemies
@@ -12,27 +13,53 @@ Value is Health recovery for HP, Ammo recovery for AP, and remaining Health for 
   +rotating;
   +centralize.
 
-+centralize:
++centralize
   <-
   ?center(C);
   .goto(C);
   .print("Moving towards the center: ", C);
   -+state(centralizing);
+  -+rotating;
   -centralize.
 
-+flee:
++flee
   <-
   .safest_point(P);
+  .goto(P);
   .print("Fleeing towards ", P);
   -+state(fleeing);
-  -flee;
+  -+rotating;
+  -flee.
 
-+rotating:
++attack
+  <-
+  ?attack_target(P);
+  -rotating;
+  .goto(P);
+  .print("Attacking position ", P);
+  -+state(attacking);
+  -attack.
+
++fetch
+  <-
+  ?fetch_target(P);
+  -+rotating;
+  .goto(P);
+  .print("Fetching pack at position ", P);
+  -+state(fetching);
+  -fetch.
+
++reset
+  <-
+  .reset_state;
+  -reset.
+
++rotating
   <-
   ?turn_angle(A);
   .turn(A);
   .wait(1000);
-  if (rotating) then {
+  if (rotating) {
     -+rotating;
   }.
 
@@ -47,10 +74,15 @@ Value is Health recovery for HP, Ammo recovery for AP, and remaining Health for 
   +reset_state;
   -target_reached(T).
 
++target_reached(T): state(attacking) & attack_target(AT)
+  <-
+  -attack_target(AT);
+  +reset_state;
+  -target_reached(T).
+
 +target_reached(T): state(fleeing)
   <-
-  .safest_point(P);
-  .print("Fleeing towards ", P);
+  +flee;
   -target_reached(T).
 
 /*  
@@ -70,7 +102,7 @@ Value is Health recovery for HP, Ammo recovery for AP, and remaining Health for 
   .seen_pack(ID, Type, Value, Position);
   -packs_in_fov(ID, Type, Angle, Distance, Value, Position);
   .print("Detecting a pack of type ", Type, " at position ", Position, " with value ", Value);
-  +pack(ID, Type, Value, Position)
+  +pack(ID, Type, Value, Position).
 
 +threshold_health(HP) : not state(fetching)
   <-

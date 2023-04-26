@@ -1,5 +1,5 @@
 {
-    "host": "gtirouter.dsic.upv.es",
+    "host": "localhost",
     "manager": "manager_mfabgom",
     "manager_password": "secret",
     "service": "service_mfabgom",
