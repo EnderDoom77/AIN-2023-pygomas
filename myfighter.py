@@ -46,7 +46,7 @@ def vec_normalize(v: Vector3, norm = 1.0) -> Vector3:
     return vec_mult(v, norm / length)
 
 # Behavioural parameters
-PERSISTENCE = 15  # How long it perceives threats and items in memory as still being relevant
+PERSISTENCE = 7  # How long it perceives threats and items in memory as still being relevant
 TIME_LOCALITY = 1 # How much it thinks objects in memory are moving away per second
 FLIGHT_DISTANCE = 10
 MAX_FLIGHT_ATTEMPTS = 10
@@ -54,6 +54,7 @@ FLIGHT_SPREAD_DISTANCE_MIN = 5
 FLIGHT_SPREAD_DISTANCE_MAX = 5
 MAX_FLIGHT_SPREAD_ATTEMPTS = 3
 MAX_DISTANCE = 256
+CENTER = [128, 0, 128]
 
 MAX_HEALTH = 100
 MAX_AMMO = 100
@@ -64,10 +65,11 @@ VERY_LOW_AMMO = 15
 
 # Ontology
 STATE = "state"
-FETCH_TARGET = "fetch_target"
-ATTACK_TARGET = "attack_target" 
+FETCHING = "fetching"
+ATTACK_ID = "attack_id"
+ATTACK_TARGET = "attack_target"
 
-# State Ontology
+# State Action Ontology
 CENTRALIZE = "centralize"
 FLEE = "flee"
 ATTACK = "attack"
@@ -81,19 +83,20 @@ HEALTH_PACK_RESTORE = 20
 AMMO_PACK_RESTORE = 20
 
 class Item:
-    def __init__(self, last_seen: float, position: Vector3):
+    def __init__(self, id: int, last_seen: float, position: Vector3):
+        self.id = id
         self.last_seen = last_seen
         self.position = position
 
 class Troop(Item):
-    def __init__(self, last_seen: float, position: Vector3, type: TroopType, health: float):
-        super().__init__(type, last_seen, position)
+    def __init__(self, id: int, last_seen: float, position: Vector3, type: TroopType, health: float):
+        super().__init__(id, last_seen, position)
         self.health = health
         self.type = type
         
 class Pack(Item):
-    def __init__(self, last_seen: float, position: Vector3, type: PackType):
-        super().__init__(type, last_seen, position)
+    def __init__(self, id:int, last_seen: float, position: Vector3, type: PackType):
+        super().__init__(id, last_seen, position)
         self.type = type
 
 class BDISurvivalist(BDISoldier):
@@ -171,8 +174,8 @@ class BDISurvivalist(BDISoldier):
         
         @actions.add_function(".safest_point", ())
         def _safest_point() -> Vector3:
-            now : float = _get_now()
-            here : Vector3 = self.movement.position
+            now : float = time.time()
+            here : Vector3 = self.here()
             sum_weights = 0.0
             danger_peak = [0.0] * 3
             for enemy in self.enemy_memory.values():
@@ -180,30 +183,50 @@ class BDISurvivalist(BDISoldier):
                 w = max(0.0, PERSISTENCE - (now - enemy.last_seen)) * enemy.health # WEIGHT
                 sum_weights += w
                 danger_peak = vec_addmult(danger_peak, enemy.position, w)
+            if sum_weights == 0:
+                return CENTER
             flight_direction = vec_normalize(vec_addmult(here, danger_peak, -1 / sum_weights))
             # Flight direction is a vector pointing to the safest position
             # Target contains the tentative target location
             final_target = self.get_walkable_point_along_ray(here, flight_direction)
             return final_target            
-            
+        
+        @actions.add_function(".should_flee", ())
+        def _should_flee() -> bool:
+            now = time.time()
+            relevant_enemies = [e for e in self.enemy_memory.values() if e.last_seen + PERSISTENCE > now]
+            return relevant_enemies == []
+        
         @actions.add(".seen_enemy", 4)
         def _seen_enemy(agent: Agent, term, intention: Intention):
-            # arg: ID, Type, Angle, Distance, Health, Position
+            # arg: ID, Type, Health, Position
             arg : tuple[int, TroopType, float, Vector3] = grounded(term.args, intention.scope)
+            #print(f"TROOP DETECTED: {arg}")
             enemy_id : int = int(arg[0])
             enemy_pos = (arg[-1][0], arg[-1][1], arg[-1][2])
             enemy_type = TroopType(arg[1])
             health = float(arg[2])
-            self.enemy_memory[enemy_id] = Troop(_get_now(), enemy_pos, enemy_type, health)
+            self.enemy_memory[enemy_id] = Troop(enemy_id, time.time(), enemy_pos, enemy_type, health)
+            yield
             
         @actions.add(".seen_pack", 4)
         def _seen_pack(agent: Agent, term, intention: Intention):
-            # arg: ID, Type, Angle, Distance, Value, Position
+            # arg: ID, Type, Value, Position
             arg : tuple[int, PackType, float, Vector3] = grounded(term.args, intention.scope)
-            pack_id : int = arg[0]
+            #print(f"PACK DETECTED: {arg}")
+            pack_id = int(arg[0])
             pack_type = PackType(arg[1])
             pack_pos = (arg[-1][0], arg[-1][1], arg[-1][2])
-            self.pack_memory[pack_id] = Pack(_get_now(), pack_pos, pack_type)
+            self.pack_memory[pack_id] = Pack(pack_id, time.time(), pack_pos, pack_type)
+            yield
+            
+        @actions.add(".pack_gone", 1)
+        def _pack_gone(agent: Agent, term, intention: Intention):
+            # arg: ID
+            arg: tuple[int] = grounded(term.args, intention.scope)
+            pack_id = int(arg[0])
+            del self.pack_memory[pack_id]
+            yield
             
         @actions.add_function(".closest_point", (Vector3, List[Vector3]))
         def _closest_point(point : Vector3, candidates: List[Vector3]):
@@ -222,26 +245,33 @@ class BDISurvivalist(BDISoldier):
             if hp < MAX_HEALTH:
                 hp_packs = self.closest_health_packs()
                 if hp_packs != []:
-                    self.bdi.set_belief(FETCH_TARGET, hp_packs[0].position)
-                    self.bdi.add_belief(FETCH)
+                    self.bdi.set_belief(FETCHING, hp_packs[0].id, hp_packs[0].position, hp_packs[0].type)
+                    self.bdi.set_belief(FETCH)
+                    print("RESET STATE TO FETCH HEALTH PACK")
                     return
             
             enemies = self.closest_recent_troops()    
             if hp < LOW_HEALTH and enemies != []:
-                self.bdi.add_belief(FLEE)
+                self.bdi.set_belief(FLEE)
+                print("RESET STATE TO FLIGHT")
                 return
             
             ammo = self.get_ammo()        
             if ammo > 0 and enemies != []:
                 self.bdi.set_belief(ATTACK_TARGET, enemies[0].position)
-                self.bdi.add_belief(ATTACK)
+                self.bdi.set_belief(ATTACK_ID, enemies[0].id)
+                self.bdi.set_belief(ATTACK)
+                print("RESET STATE TO ATTACK")
                 return
                 
             if ammo < LOW_AMMO:
                 ammo_packs = self.closest_ammo_packs()
                 if ammo_packs != []:
-                    self.bdi.set_belief(FETCH_TARGET, ammo_packs[0].position)
-                    self.bdi.add_belief(FETCH)
+                    self.bdi.set_belief(FETCHING, ammo_packs[0].id, ammo_packs[0].position, ammo_packs[0].type)
+                    self.bdi.set_belief(FETCH)
+                    print("RESET STATE TO FETCH AMMO PACK")
                     return
                 
-            self.bdi.add_belief(CENTRALIZE)
+            self.bdi.set_belief(CENTRALIZE)
+            print("RESET STATE TO CENTRALIZE")
+            yield

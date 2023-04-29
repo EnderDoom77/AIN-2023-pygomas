@@ -1,5 +1,6 @@
 {
     "host": "localhost",
+    "port": 9001,
     "manager": "manager_mfabgom",
     "manager_password": "secret",
     "service": "service_mfabgom",

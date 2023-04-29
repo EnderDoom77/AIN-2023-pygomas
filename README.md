@@ -10,14 +10,15 @@ The goal of the agent is to get to the center of the map.
 This state has the following transition conditions:
 * If the agent's health drops below a threshold, it transitions to the fleeing state.
 * If the agent sees an enemy on low health and has sufficient ammunition, it targets this enemy and transitions to the attacking state.
-* If the agent sees a health pack and its health is missing at least as much health as a health pack recovers, it targets this health pack and transitions to the fetching state.
-* If the agent sees an ammo pack and its ammo is missing at least as much ammo as an ammo pack restores, it targets this ammo pack and transitions to the fetching state.
+* If the agent sees a health pack and its health is not full, it targets this health pack and transitions to the fetching state.
+* If the agent sees an ammo pack and its ammo is not ufll, it targets this ammo pack and transitions to the fetching state.
 
 ### State - Fleeing
 The goal of the agent is to remain as far away as possible from all enemies.
 This state has the following transition conditions:
 * If the agent sees an enemy on very low health and has sufficient ammunition, it targets this enemy and transitions to the attacking state.
-* If the target sees a health pack, it targets this health pack and transitions to the fetching state.
+* If the agent sees a health pack, it targets this health pack and transitions to the fetching state.
+* If the agent reaches its flight destination and doesn't know of any enemies, it transitions to the reset state.
 
 ### State - Attacking
 The goal of the agent is to damage and kill its target.
