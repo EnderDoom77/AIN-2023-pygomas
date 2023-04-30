@@ -1,6 +1,5 @@
 {
-    "host": "localhost",
-    "port": 9001,
+    "host": "host.docker.internal",
     "manager": "manager_mfabgom",
     "manager_password": "secret",
     "service": "service_mfabgom",
@@ -15,7 +14,7 @@
         },
         {
             "rank": "myfighter.BDISurvivalist",
-            "name": "survivor_mfabgom",
+            "name": "survivalist_mfabgom",
             "password": "secret",
             "amount": 1,
             "asl": "myfighter.asl"

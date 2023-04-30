@@ -1,79 +1,113 @@
 // Initial Beliefs
-center([128, 0, 128]).
+center([128, 0, 120]).
 damage_factor(2).
 turn_angle(1.25).
+idle_time(0).
 
-low_health(50).
+low_health(75).
+low_ammo(50).
 critical_health(15).
-shot_burst(5).
-
-/*
-ITEM STRUCTURE: ID, Time, Position, Value
-Value is Health recovery for HP, Ammo recovery for AP, and remaining Health for Enemies
-*/
+default_shot_burst(5).
+hp_pack_max_distance(25).
 
 +flag(F): team(200)
   <-
-  +centralize.
+  !!update;
+  +centralize;
+  ?threshold_shots(TSh);
+  -+shot_burst(TSh).
 
 +centralize
   <-
+  -+idle_time(0);
   ?center(C);
-  .goto(C);
-  //.print("Moving towards the center: ", C);
+  .random_point_around(C, 0, 10, RandomPos);
+  .goto(RandomPos);
+  .print("Moving towards the center: ", C);
   -+state(centralizing);
-  -+rotating;
+  if (not rotating) {
+    +rotating;
+  }
   -centralize.
 
 +flee
   <-
+  -+state(fleeing);
+  -+idle_time(0);
   .should_flee(B);
-  if (B) {
-    .safest_point(P);
-    .goto(P);
-    //.print("Fleeing towards ", P);
-    -+state(fleeing);
-    -+rotating;
+  .closest_health_pack([ID, HPPos]);
+  ?position(Here);
+  .distance(Here, HPPos, Dist);
+  ?hp_pack_max_distance(MaxDist);
+  if (ID >= 0 & Dist < MaxDist) {
+    -+fetching(ID, HPPos, 1001);
+    +fetch;
   } else {
-    +reset;
+    if (B) {
+      .safest_point(P);
+      .print("Fleeing towards ", P);
+      .goto(P);
+      ?default_shot_burst(DSh);
+      -+shot_burst(DSh);
+      if (not rotating) {
+        +rotating;
+      }
+    } else {
+      +reset;
+    }
   }
   -flee.
 
 +attack
   <-
   ?attack_target(P);
+  -+idle_time(0);
   -rotating;
+  ?threshold_shots(TSh);
+  -+shot_burst(TSh);
   .goto(P);
-  //.print("Attacking position ", P);
+  .print("Attacking position ", P);
   -+state(attacking);
   -attack.
 
-+fetch
++fetch: not state(fetching)
   <-
+  -+idle_time(0);
   ?fetching(_,P,_);
-  -+rotating;
+  if (not rotating) {
+    +rotating;
+  }
   .goto(P);
-  //.print("Fetching pack at position ", P);
+  .print("Fetching pack at position ", P);
   -+state(fetching);
   -fetch.
 
 +reset
   <-
-  .reset_state;
+  .reset_state([]);
   -reset.
 
-+rotating
++!update
   <-
-  ?turn_angle(A);
-  .turn(A);
-  .wait(1000);
+  ?idle_time(IT);
+  -+idle_time(IT + 1);
+  .update([]);
+  .wait(500);
   if (rotating) {
-    -+rotating;
-  }.
+    ?position(P);
+    .random_point_around(P, 10, 10, RandomPos);
+    .look_at(RandomPos);
+  }
+  if (idle_time(IT) & IT > 10) {
+    +reset;
+  }
+  !update.
 
 +target_reached(T): state(centralizing)
   <-
-  -+rotating;
+  if (not rotating) {
+    +rotating;
+  }
   -target_reached(T).
 
 +target_reached(T): state(fetching) & fetching(FID,FPos,FType)
@@ -106,17 +140,31 @@ Value is Health recovery for HP, Ammo recovery for AP, and remaining Health for 
   -friends_in_fov(ID, Type, Angle, Distance, Health, Position);
   +threat(ID, Health, Position).
 
-+threat(ID, Health, Position): state(fleeing) & crit_health(CHP) & Health < CHP & ammo(Ammo) & Ammo * 0.55 > Health
++threat(ID, Health, Position): state(fleeing) & ammo(Ammo) & Ammo > 0
   <-
-  -+attack_target(Position);
-  -+attack_id(ID);
   ?shot_burst(Burst);
-  .shoot(Position, Burst);
-  +attack.
+  .min_ceil(Burst, Health * 0.55, CBurst);
+  .shoot(CBurst, Position);
+  if (crit_health(CHP) & Health < CHP & Ammo > Health * 0.55) {
+    -+attack_target(Position);
+    -+attack_id(ID);
+    +attack;
+  }.
 
-+threat(ID, Health, Position): state(attacking) & attack_id(AID) & AID = ID
+// If we're not fleeing and we see a potential target, shoot it
++threat(ID, Health, Position): not state(fleeing) & ((ammo(Ammo) & Ammo > Health * 0.55) | (state(attacking) & attack_id(AID) & AID = ID))
   <-
-  .shoot(Position, Burst).
+  ?shot_burst(Burst);
+  .min_ceil(Burst, Health * 0.55, CBurst);
+  .shoot(CBurst, Position);
+  if (state(centralizing)) {
+    -+attack_target(Position);
+    -+attack_id(ID);
+    +attack;
+  }
+  if (Ammo == 0 & state(attacking)) {
+    +reset;
+  }.
 
 +packs_in_fov(ID, Type, Angle, Distance, Value, Position)
   <-
@@ -125,10 +173,15 @@ Value is Health recovery for HP, Ammo recovery for AP, and remaining Health for 
   -packs_in_fov(ID, Type, Angle, Distance, Value, Position);
   +pack(ID, Type, Value, Position).
 
-+pack(ID, Type, Value, Position): Type = 1001 & (state(fleeing) | state(centralizing) & health(HP) & HP < 100)
++pack(ID, Type, Value, Position): Type = 1001 & (state(fleeing) | state(centralizing)) & health(HP) & HP < 100
   <-
-  +fetching(ID, Position, Type);
-  .goto(Position).
+  -+fetching(ID, Position, Type);
+  +fetch.
+
++pack(ID, Type, Value, Position): Type = 1002 & state(centralizing) & low_ammo(LAmmo) & ammo(Ammo) & Ammo < LAmmo
+  <-
+  -+fetching(ID, Position, Type);
+  +fetch.
 
 // If we see a pack we are not currently going for
 +pack(ID, Type, Value, Position): state(fetching) & fetching(FID, FPosition, FType) & not ID = FID
@@ -138,10 +191,11 @@ Value is Health recovery for HP, Ammo recovery for AP, and remaining Health for 
   ?ammo(Ammo);
   .closest_point(Here, [FPosition, Position], Closest);
   if (
-    (Type = 1001 & (not FType = 1001 | Closest = Position) & HP < 100) |
+    (Type = 1001 & ((not FType = 1001) | Closest = Position) & HP < 100) |
     (Type = 1002 & FType == 1002 & Closest = Position & Ammo < 100)
   ) {
-    +fetching(ID, Position, Type);
+    -+fetching(ID, Position, Type);
+    .print("Changing Fetch Target To: ", Position);
     .goto(Position);
   }.
 
