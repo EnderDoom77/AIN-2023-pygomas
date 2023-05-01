@@ -1,0 +1,17 @@
+{
+    "host": "gtirouter.dsic.upv.es",
+    "manager": "manager_mfabgom",
+    "manager_password": "secret",
+    "service": "service_mfabgom",
+    "service_password": "secret",
+    "axis": [
+        {
+            "rank": "survivalist.BDISurvivalist",
+            "name": "survivalist_mfabgom",
+            "password": "secret",
+            "amount": 1,
+            "asl": "survivalist.asl"
+        }
+    ],
+    "allied": [ ]
+}
