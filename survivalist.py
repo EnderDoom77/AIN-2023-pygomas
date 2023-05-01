@@ -1,3 +1,4 @@
+# suvivalist.py
 import json
 import math
 import random

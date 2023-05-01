@@ -13,11 +13,11 @@
             "asl": "fighter.asl"
         },
         {
-            "rank": "myfighter.BDISurvivalist",
-            "name": "survivor_mfabgom",
+            "rank": "survivalist.BDISurvivalist",
+            "name": "survivalist_mfabgom",
             "password": "secret",
             "amount": 1,
-            "asl": "myfighter.asl"
+            "asl": "survivalist.asl"
         }
     ],
      "allied": [

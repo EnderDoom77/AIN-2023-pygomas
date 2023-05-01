@@ -13,14 +13,14 @@
             "asl": "fighter.asl"
         },
         {
-            "rank": "myfighter.BDISurvivalist",
+            "rank": "survivalist.BDISurvivalist",
             "name": "survivalist_mfabgom",
             "password": "secret",
             "amount": 1,
-            "asl": "myfighter.asl"
+            "asl": "survivalist.asl"
         }
     ],
-     "allied": [
+    "allied": [
         {
             "rank": "invencibleM.BDIMInvencible",
             "name": "medic_mfabgom",

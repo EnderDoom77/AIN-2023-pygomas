@@ -1,3 +1,5 @@
+// survivalist.asl
+
 // Initial Beliefs
 center([128, 0, 120]).
 damage_factor(2).
