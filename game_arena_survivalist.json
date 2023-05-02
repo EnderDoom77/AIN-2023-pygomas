@@ -1,8 +1,8 @@
 {
     "host": "gtirouter.dsic.upv.es",
-    "manager": "manager_mfabgom",
+    "manager": "m",
     "manager_password": "secret",
-    "service": "service_mfabgom",
+    "service": "s",
     "service_password": "secret",
     "axis": [
         {

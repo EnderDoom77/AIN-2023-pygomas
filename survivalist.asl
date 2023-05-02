@@ -153,6 +153,12 @@ last_shot(0).
   if (not idle_since(_)) { // For some reason, querying idle_since sometimes causes a plan failure
     +idle_since(Time);
   }
+  if (not state(_)) {
+    +state("reset");
+  }
+  if (not heading(_)) {
+    +heading([0,0])
+  }
   ?idle_since(IdleTime);
   ?heading(H);
   ?state(S);

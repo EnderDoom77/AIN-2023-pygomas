@@ -46,6 +46,7 @@ def vec_norm_squared(v: Vector3) -> float:
     return v[0] * v[0] + v[1] * v[1] + v[2] * v[2]
 def vec_normalize(v: Vector3, norm = 1.0) -> Vector3:
     length = sqrt(vec_norm_squared(v))
+    if length == 0: return v
     return vec_mult(v, norm / length)
 
 # Behavioural parameters
@@ -62,6 +63,7 @@ CENTER = (128, 0, 128)
 
 MAX_HEALTH = 100
 MAX_AMMO = 100
+MIN_AMMO = 5
 LOW_HEALTH = 75
 LOW_AMMO = 65
 VERY_LOW_HEALTH = 15
@@ -400,7 +402,7 @@ class BDISurvivalist(BDISoldier):
                 return FLEE
             
             ammo = self.get_ammo()        
-            if ammo > 0 and enemies != [] and hp > LOW_HEALTH:
+            if ammo > MIN_AMMO and enemies != [] and hp > LOW_HEALTH:
                 most_relevant_enemy = enemies[0]
                 dt = time.time() - most_relevant_enemy.last_seen 
                 # Only attack enemies we think are still alive
