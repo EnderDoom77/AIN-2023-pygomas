@@ -1,0 +1,46 @@
+{
+    "host": "gtirouter.dsic.upv.es",
+    "manager": "manager_mfabgom",
+    "manager_password": "secret",
+    "service": "service_mfabgom",
+    "service_password": "secret",
+    "axis": [
+		{
+            "rank": "ctfcommander.CTFCommander",
+            "name": "commander_pryme",
+            "password": "secret",
+            "amount": 1,
+            "asl": "ctfcommander.asl"
+        },
+        {
+            "rank": "ctfmedic.CTFMedic",
+            "name": "medic_pryme",
+            "password": "secret",
+            "amount": 2,
+            "asl": "ctfmedic.asl"
+        },
+        {
+            "rank": "ctffieldop.CTFFieldOp",
+            "name": "fieldop_pryme",
+            "password": "secret",
+            "amount": 3,
+            "asl": "ctffieldop.asl"
+        },
+        {
+            "rank": "ctfsoldier.CTFSoldier",
+            "name": "soldier_pryme",
+            "password": "secret",
+            "amount": 4,
+            "asl": "ctffieldop.asl"
+        }
+    ],
+     "allied": [
+        {
+            "rank": "BDISoldier",
+            "name": "fighter_mfabgom",
+            "password": "secret",
+            "amount": 10,
+            "asl": "fighter.asl"
+        }
+    ]
+}
