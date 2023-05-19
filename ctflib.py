@@ -2,11 +2,15 @@ import json
 from math import cos, pi, sin, sqrt
 import random
 import time
+import numpy as np
 
 from pygomas.agent import Agent
+from pygomas.bditroop import BDITroop
+from pygomas.sight import Sight
+from pygomas.config import *
+from pygomas.pack import PACK_MEDICPACK, PACK_AMMOPACK
 from typing import Dict, List, Tuple
 from agentspeak import Actions, grounded
-
 
 Vector3 = Tuple[float, float, float]
 TroopType = int
@@ -16,6 +20,8 @@ PI = pi
 COMM_FILE = "bdi_mem.json"
 TIME_LOCALITY = 1
 PERSISTENCE = 10
+
+TROOP_RADIUS = 10
 
 class Item:
     def __init__(self, id: int, last_seen: float, position: Vector3):
@@ -126,8 +132,52 @@ def _closest_recent_items(position: Vector3, memory: Dict[int, Item]) -> List[It
 def closest_packs(position: Vector3, memory: Dict[int, Pack]) -> List[Pack]:
     return _closest_recent_items(position, memory)
 
-def define_common_actions(agent: Agent, actions: Actions):
+def raycast(origin: Vector3, direction: Vector3, targets: List[Vector3], radius: float) -> int:
+    """Casts a ray from the origin position in a given direction, and checks whether it would hit spheres located at targets with a given radius.
+
+    Returns:
+        int: The index within targets of the hit object, or -1 if none are hit
+    """
+    # flattening to two dimensions
+    origin = np.array([origin[0],origin[2]])
+    direction = np.array([direction[0],direction[2]])
+    targets = [np.array([t[0],t[2]]) for t in targets]
+    targets_sorted = sorted(targets,key=lambda x: np.linalg.norm(origin - x))
+    dirnorm = np.linalg.norm(direction)
+    for t in targets_sorted:
+        d = np.cross(direction, t - origin)/dirnorm
+        if d <= radius:
+            return targets.find(t)
+    return -1
+    
+        
+def define_common_actions(agent: BDITroop, actions: Actions):
+    def here() -> Vector3:
+        r = agent.movement.get_position()
+        return (r.x, r.y, r.z)
+    
     @actions.add_function(".now", ())
     def _get_now():
         return time.time()
+    
+    def _should_shoot(pos: Vector3) -> False:
+        mypos = here()
+        fov_objects : List[Sight] = agent.fov_objects
+        friends : List[Vector3] = []
+        enemies : List[Vector3] = []
+        for o in fov_objects:
+            if o.get_team() == TEAM_NONE:
+                continue 
+            v = o.get_position()
+            vec3 = (v.x, v.y, v.z)
+            if o.get_team() == agent.team:
+                friends.append(vec3)
+            else:
+                enemies.append(vec3)
+        
+        all_positions = friends + enemies
+        hit_index = raycast(mypos, vec_sub(pos,mypos), all_positions, TROOP_RADIUS)
+        if hit_index < 0:
+            return False
+        return hit_index >= len(friends)
         
