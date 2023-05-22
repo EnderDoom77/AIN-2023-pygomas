@@ -20,6 +20,13 @@ from typing import Callable, Dict, List, Tuple
 from agentspeak.stdlib import actions as asp_action
 from termcolor import colored
 
+from ctflib import common_init, define_common_actions
+
 class CTFMedic(BDIMedic):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        common_init(self, *args, **kwargs)
+        
+    def add_custom_actions(self, actions : Actions):
+        super().add_custom_actions(actions)
+        define_common_actions(self, actions)

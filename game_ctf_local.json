@@ -1,5 +1,5 @@
 {
-    "host": "gtirouter.dsic.upv.es",
+    "host": "host.docker.internal",
     "manager": "manager_mfabgom",
     "manager_password": "secret",
     "service": "service_mfabgom",
@@ -31,7 +31,7 @@
             "name": "soldier_pryme",
             "password": "secret",
             "amount": 4,
-            "asl": "ctffieldop.asl"
+            "asl": "ctfsoldier.asl"
         }
     ],
      "allied": [

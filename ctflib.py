@@ -47,7 +47,7 @@ class Pack(Item):
         return base
 
 # General utility function generation
-def _random_point_around(point: List[float], min_distance: float, max_distance: float, rng: random.Random):
+def random_point_around(point: List[float], min_distance: float, max_distance: float, rng: random.Random):
     angle = rng.random() * 2 * PI
     dist = min_distance + rng.random() * (max_distance - min_distance)
     return (
@@ -72,12 +72,17 @@ def vec_normalize(v: Vector3, norm = 1.0) -> Vector3:
     return vec_mult(v, norm / length)
 
 def visualizer(agent: Agent, v: List[Tuple[str,any]]):
-    here = agent.here()
+    here = agent.movement.position
+    here = [here.x, here.y, here.z]
     dest = agent.movement.destination
     dest = [dest.x, dest.y, dest.z]
-    safest = agent.safest_point()
+    try:
+        safest = agent.safest_point()
+    except:
+        safest = [-1,-1,-1]
     data = {
         "enemy_memory": [e.to_dict() for e in agent.enemy_memory.values()],
+        "ally_memory": [e.to_dict() for e in agent.ally_memory.values()],
         "pack_memory": [p.to_dict() for p in agent.pack_memory.values()],
         "time": time.time(),
         "pos": here,
@@ -111,7 +116,6 @@ def get_positions_around(center: Vector3, radius: float, count: int):
 
 def attack_formation_around(center: Vector3, radius: float, count: int):
     pass
-
 
 def _closest_recent_items_to_reference(position: Vector3, memory: Dict[int, Item]) -> List[Item]:
     now = time.time()
@@ -150,7 +154,11 @@ def raycast(origin: Vector3, direction: Vector3, targets: List[Vector3], radius:
             return targets.find(t)
     return -1
     
-        
+def common_init(agent: BDITroop, *args, **kwargs):
+    agent.rng = random.Random()
+    agent.health_pack_memory = {}
+    agent.ammo_pack_memory = {}
+
 def define_common_actions(agent: BDITroop, actions: Actions):
     def here() -> Vector3:
         r = agent.movement.get_position()
@@ -180,4 +188,25 @@ def define_common_actions(agent: BDITroop, actions: Actions):
         if hit_index < 0:
             return False
         return hit_index >= len(friends)
+    
+    @actions.add(".pack_used", 2)
+    def _pack_used(pos: Vector3, pack_type: PackType):
+        mem = agent.health_pack_memory if pack_type == PACK_MEDICPACK else agent.ammo_pack_memory
+        if pos in mem:
+            del mem[pos]
+    
+    @actions.add_function(".random_point_around", (Tuple, float, float))
+    def _random_point_around(pos: Vector3, min_dist: float, max_dist: float):
+        return random_point_around(pos, min_dist, max_dist, agent.rng)
+    
+    @actions.add_function(".register_pack", (Tuple, int))
+    def _handle_pack(pos: Vector3, pack_type: PackType):
+        mem = agent.health_pack_memory if pack_type == PACK_MEDICPACK else agent.ammo_pack_memory
+        if pos in mem:
+            mem[pos].last_seen = time.time()
+            return False
+        
+        p = Pack(0, time.time(), pos, pack_type)
+        mem[pos] = p
+        return True
         
