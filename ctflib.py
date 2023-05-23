@@ -189,7 +189,7 @@ def define_common_actions(agent: BDITroop, actions: Actions):
             return False
         return hit_index >= len(friends)
     
-    @actions.add(".pack_used", 2)
+    @actions.add(".pack_taken", 2)
     def _pack_used(pos: Vector3, pack_type: PackType):
         mem = agent.health_pack_memory if pack_type == PACK_MEDICPACK else agent.ammo_pack_memory
         if pos in mem:
@@ -209,4 +209,8 @@ def define_common_actions(agent: BDITroop, actions: Actions):
         p = Pack(0, time.time(), pos, pack_type)
         mem[pos] = p
         return True
+    
+    @actions.add_function(".distance", (Tuple, Tuple))
+    def _distance(v_a: Vector3, v_b: Vector3):
+        return sqrt(vec_norm_squared(vec_sub(v_a,v_b)))
         

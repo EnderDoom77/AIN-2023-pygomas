@@ -1,3 +1,5 @@
+guard_radius(15).
+
 +flag(Pos) <-
   .register_service("commander");
   .print("Moving to", Pos);
@@ -9,13 +11,19 @@
 +!update
   <-
   .update([]);
+  .print("I'm alive");
   .wait(500);
+  if (target_reached(_) & position(Pos)) {
+    .random_point_around(Pos, 10, 10, RandPos);
+    .look_at(RandPos);
+  }
   !update.
 
-+my_status(X,Y,Z,Health)[source(A)]
++teamdata(X,Y,Z,Health)[source(A)]
   <-
   .print("Received status");
-  .register_position(A, [X,Y,Z], Health).
+  // .register_position(A, [X,Y,Z], Health);
+  -teamdata(_,_,_,_).
 
 +pack_seen(X,Y,Z,Type)
   <-
@@ -24,6 +32,9 @@
     .print("New pack of type,", Type, "detected at", Position);
     !broadcast(new_pack(X,Y,Z,Type));
   }.
+
++enemy_seen(X,Y,Z,Health) <-
+  .register_enemy([X,Y,Z], Health).
 
 +!broadcast(Msg)
   <-
@@ -46,7 +57,8 @@
 +guard(Guards): guard_command("circle") <-
   -guard_command("circle");
   ?flag(FlagPos);
-  .get_circular_formation(FlagPos, 20, Guards, Stations);
+  ?guard_radius(GRadius);
+  .get_circular_formation(FlagPos, GRadius, Guards, Stations);
   +temp_var_i(0);
   for (.member(G,Guards)) {
     ?temp_var_i(I);

@@ -30,13 +30,16 @@ state("defending").
 
 +!update <-
     if (my_commander(Comm)) {
-        .print("Medic Reporting to", Comm);
         ?position([X,Y,Z]);
         ?health(HP);
-        .send(Comm, tell, my_status(X, Y, Z, HP));
+        .print("Medic Reporting position", [X,Y,Z], "and health", HP, "to", Comm);
+        .send(Comm, tell, teamdata(X,Y,Z, HP));
     }
     if (state("patrolling")) {
         .cure;
     }
     .wait(500);
     !update.
+
++new_pack(X, Y, Z, Type) <-
+    .register_pack([X,Y,Z], Type, _).

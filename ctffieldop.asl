@@ -11,7 +11,7 @@ my_station([0,0,0]).
         .print("Fieldop Reporting to", Comm);
         ?position([X,Y,Z]);
         ?health(HP);
-        .send(Comm, tell, my_status(X, Y, Z, HP));
+        .send(Comm, tell, teamdata(X, Y, Z, HP));
     }
     if (not state("initial") & target_reached(_)) {
         .reload;
@@ -27,6 +27,9 @@ my_station([0,0,0]).
 +commander([]) <-
     .wait(500);
     .get_service("commander").
+
++new_pack(X, Y, Z, Type) <-
+    .register_pack([X,Y,Z], Type, _).
 
 +defend_position(Pos): state(State) & my_station(Station)
     <-
