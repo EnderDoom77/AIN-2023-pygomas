@@ -9,7 +9,7 @@ from pygomas.bditroop import BDITroop
 from pygomas.sight import Sight
 from pygomas.config import *
 from pygomas.pack import PACK_MEDICPACK, PACK_AMMOPACK
-from typing import Dict, List, Tuple
+from typing import Callable, Dict, List, Tuple
 from agentspeak import Actions, grounded
 
 Vector3 = Tuple[float, float, float]
@@ -114,8 +114,20 @@ def get_positions_around(center: Vector3, radius: float, count: int):
             center[2] + sin(angle) * radius
         )
 
-def attack_formation_around(center: Vector3, radius: float, count: int):
-    pass
+def get_compatible_item_or_new(item: Item, item_memory: Dict[int, Item], locality: float, filter: Callable[[Item], bool] = lambda _: True):
+        candidates = item_memory.values()
+        candidates = [c for c in candidates if filter(c)]
+        candidates.sort(key=lambda x: vec_norm_squared(vec_sub(x.position, item.position)))
+        if candidates == []:
+            return len(item_memory)
+        
+        most_likely = candidates[0]
+        distance = sqrt(vec_norm_squared(vec_sub(most_likely.position, item.position)))
+        dt = item.last_seen - most_likely.last_seen
+        if dt * locality > distance:
+            return most_likely.id
+        
+        return len(item_memory)
 
 def _closest_recent_items_to_reference(position: Vector3, memory: Dict[int, Item]) -> List[Item]:
     now = time.time()
@@ -168,7 +180,8 @@ def define_common_actions(agent: BDITroop, actions: Actions):
     def _get_now():
         return time.time()
     
-    def _should_shoot(pos: Vector3) -> False:
+    @actions.add_function(".can_shoot", (Tuple))
+    def _can_shoot(pos: Vector3) -> False:
         mypos = here()
         fov_objects : List[Sight] = agent.fov_objects
         friends : List[Vector3] = []
@@ -213,4 +226,8 @@ def define_common_actions(agent: BDITroop, actions: Actions):
     @actions.add_function(".distance", (Tuple, Tuple))
     def _distance(v_a: Vector3, v_b: Vector3):
         return sqrt(vec_norm_squared(vec_sub(v_a,v_b)))
+    
+    @actions.add_function(".str", (any))
+    def _str(obj: any):
+        return str(obj)
         

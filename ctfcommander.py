@@ -22,7 +22,7 @@ from agentspeak.stdlib import actions as asp_action
 from termcolor import colored
 from arena.survivalist import Troop
 
-from ctflib import Pack, TroopType, Vector3, define_common_actions, get_positions_around, visualizer, common_init
+from ctflib import Pack, TroopType, Vector3, define_common_actions, get_compatible_item_or_new, get_positions_around, visualizer, common_init
 
 class CTFCommander(BDIMedic):
     def __init__(self, *args, **kwargs):
@@ -57,12 +57,12 @@ class CTFCommander(BDIMedic):
                 self.warn(f"Unable to run update: {traceback.format_exc(e)}")
             yield
         
-        @actions.add(".register_position", 3)
+        @actions.add(".register_position", 4)
         def _register_position(agent, term, intention):
             print("START Register position")
             args = grounded(term.args, intention.scope)
-            # args -> (Agent, Position, Health)
-            ag, pos, hp = tuple(args)
+            # args -> (Agent, Position, Health, Type)
+            ag, pos, hp, troop_type = tuple(args)
             ag = str(ag)
             mem : Dict[str, Troop] = self.ally_memory
             if ag in mem:
@@ -70,15 +70,16 @@ class CTFCommander(BDIMedic):
                 mem[ag].position = pos
                 mem[ag].health = hp
             else:
-                mem[ag] = Troop(len(mem),time.time(),pos,-1,hp,-1)
+                mem[ag] = Troop(len(mem),time.time(),pos,troop_type,hp,-1)
             print("END Register position")
             
-        @actions.add(".handle_enemy", 4)
+        @actions.add(".register_enemy", 3)
         def _handle_enemy(agent, term, intention):
             args = grounded(term.args, intention.scope)
-            # args -> (Id, Position, Angle, Health)
-            id, pos, angle, hp = tuple(args)
-            t = Troop(id, time.now(), pos, 0, hp, angle)
+            # args -> (Position, Health, Type)
+            pos, hp, troop_type = tuple(args)
+            new_id = get_compatible_item_or_new(pos, self.enemy_memory, 15, lambda x: x.type == troop_type)
+            t = Troop(new_id, time.now(), pos, troop_type, hp, -1)
             self.enemy_memory[id] = t
         
         @actions.add_function(".get_team", ())

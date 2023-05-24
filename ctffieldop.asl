@@ -11,9 +11,13 @@ my_station([0,0,0]).
         .print("Fieldop Reporting to", Comm);
         ?position([X,Y,Z]);
         ?health(HP);
-        .send(Comm, tell, teamdata(X, Y, Z, HP));
+        .send(Comm, tell, teamdata(X, Y, Z, HP, 203));
     }
-    if (not state("initial") & target_reached(_)) {
+    .now(Now);
+    if (last_shot(LastShot) & Now - LastShot > 5 & state("attacking") & not enemies_in_fov(_,_,_,_,_,_)) {
+        !retreat;
+    }
+    if (target_reached(_)) {
         .reload;
     }
     .wait(500);

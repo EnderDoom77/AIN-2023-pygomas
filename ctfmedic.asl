@@ -33,13 +33,31 @@ state("defending").
         ?position([X,Y,Z]);
         ?health(HP);
         .print("Medic Reporting position", [X,Y,Z], "and health", HP, "to", Comm);
-        .send(Comm, tell, teamdata(X,Y,Z, HP));
+        .send(Comm, tell, teamdata(X, Y, Z, HP, 502));
     }
-    if (state("patrolling")) {
+    if (target_reached(_)) {
         .cure;
     }
     .wait(500);
     !update.
 
++packs_in_fov(ID,Type,Angle,Distance,Health,Position): not Type = 1003 <-
+    .register_pack(Position, Type, IsNew);
+    if (IsNew & my_commander(Comm)) {
+        .send(Comm, tell, pack_seen(X, Y, Z, Type));
+    }.
+
 +new_pack(X, Y, Z, Type) <-
     .register_pack([X,Y,Z], Type, _).
+
++enemies_in_fov(ID,Type,Angle,Distance,Health,Position) <-
+    .now(Now);
+    ?position(MyPos);
+    if (my_commander(Comm) & position = [X,Y,Z]) {
+        .send(Comm, tell, enemy_seen(X,Y,Z,Health,Type));
+    }
+
+    .can_shoot(Position, CanShoot);
+    if (CanShoot) {
+        .shoot(Position, 10);
+    }.

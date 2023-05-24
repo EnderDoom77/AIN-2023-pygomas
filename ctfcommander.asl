@@ -1,4 +1,5 @@
 guard_radius(15).
+last_attack(0).
 
 +flag(Pos) <-
   .register_service("commander");
@@ -19,10 +20,10 @@ guard_radius(15).
   }
   !update.
 
-+teamdata(X,Y,Z,Health)[source(A)]
++teamdata(X,Y,Z,Health,Type)[source(A)]
   <-
   .print("Received status");
-  // .register_position(A, [X,Y,Z], Health);
+  .register_position(A, [X,Y,Z], Health, Type);
   -teamdata(_,_,_,_).
 
 +pack_seen(X,Y,Z,Type)
@@ -33,11 +34,21 @@ guard_radius(15).
     !broadcast(new_pack(X,Y,Z,Type));
   }.
 
-+enemy_seen(X,Y,Z,Health) <-
-  .register_enemy([X,Y,Z], Health).
++enemy_seen(X,Y,Z,Health,Type) <-
+  .register_enemy([X,Y,Z], Health, Type);
+  .now(Now);
+  ?last_attack(LastAtt);
+  if (Now - LastAtt > 3) {
+    !schedule_attack([X,Y,Z]);
+  }.
 
-+!broadcast(Msg)
-  <-
++!schedule_attack([X,Y,Z]) <-
+  .get_team(Allies);
+  for (.member(A, Allies)) {
+    .send(M, tell, attack_target(X,Y,Z));
+  }.
+
++!broadcast(Msg) <-
   .print("Broadcasting", Msg);
   .get_team(Allies);
   for (.member(A, Allies)) {

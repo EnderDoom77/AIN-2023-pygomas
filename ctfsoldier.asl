@@ -14,7 +14,11 @@ low_health(50).
         .print("Fieldop Reporting to", Comm);
         ?position([X,Y,Z]);
         ?health(HP);
-        .send(Comm, tell, teamdata(X, Y, Z, HP));
+        .send(Comm, tell, teamdata(X, Y, Z, HP, 201));
+    }
+    .now(Now);
+    if (last_shot(LastShot) & Now - LastShot > 5 & state("attacking") & not enemies_in_fov(_,_,_,_,_,_)) {
+        !retreat;
     }
     .wait(500);
     !update.
@@ -22,7 +26,8 @@ low_health(50).
 +commander(CommList): not CommList == [] <-
     .nth(0, CommList, X);
     .print("Registered commander,", X);
-    +my_commander(X).
+    .str(X, XStr);
+    +my_commander(XStr).
 
 +commander([]) <-
     .wait(500);
@@ -87,7 +92,7 @@ low_health(50).
 
 +!fetch_health : position(Pos) <-
     .nearest_health_pack(Pos, PackPos);
-    +!fetch(PackPos,1001).
+    !fetch(PackPos,1001).
 
 +!fetch_ammo : position(Pos) <-
     .nearest_ammo_pack(Pos, PackPos);
@@ -131,7 +136,7 @@ low_health(50).
     .now(Now);
     ?position(MyPos);
     if (my_commander(Comm) & position = [X,Y,Z]) {
-        .send(Comm, tell, enemy_seen(X,Y,Z,Health)).
+        .send(Comm, tell, enemy_seen(X,Y,Z,Health,Type)).
     }
 
     .can_shoot(MyPos, Position, CanShoot);
@@ -149,5 +154,5 @@ low_health(50).
         } else {
             .shoot(Position, 10);
         }
-    }
+    }.
     
