@@ -28,7 +28,7 @@ last_attack(0).
 
 +pack_seen(X,Y,Z,Type)
   <-
-  .register_pack(Position, Type, IsNew);
+  .register_pack([X,Y,Z], Type, IsNew);
   if (IsNew) {
     .print("New pack of type,", Type, "detected at", Position);
     !broadcast(new_pack(X,Y,Z,Type));

@@ -9,7 +9,7 @@ from pygomas.bditroop import BDITroop
 from pygomas.sight import Sight
 from pygomas.config import *
 from pygomas.pack import PACK_MEDICPACK, PACK_AMMOPACK
-from typing import Callable, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Tuple
 from agentspeak import Actions, grounded
 
 Vector3 = Tuple[float, float, float]
@@ -19,6 +19,7 @@ PI = pi
 
 COMM_FILE = "bdi_mem.json"
 TIME_LOCALITY = 1
+PACK_TIME_LOCALITY = 0.05
 PERSISTENCE = 10
 
 TROOP_RADIUS = 10
@@ -129,7 +130,7 @@ def get_compatible_item_or_new(item: Item, item_memory: Dict[int, Item], localit
         
         return len(item_memory)
 
-def _closest_recent_items_to_reference(position: Vector3, memory: Dict[int, Item]) -> List[Item]:
+def _closest_recent_items_to_reference(position: Vector3, memory: Dict[int, Item], time_locality = 0) -> List[Item]:
     now = time.time()
     candidates = []
     for id, item in memory.items():
@@ -137,16 +138,13 @@ def _closest_recent_items_to_reference(position: Vector3, memory: Dict[int, Item
         weight_t = PERSISTENCE - delta_t
         if weight_t <= 0: continue
         distance = sqrt(vec_norm_squared(vec_sub(position, item.position)))
-        weight = distance - weight_t * TIME_LOCALITY
+        weight = distance - weight_t * time_locality
         candidates.append((weight, id, item))
     candidates.sort()
     return [c[-1] for c in candidates]
 
-def _closest_recent_items(position: Vector3, memory: Dict[int, Item]) -> List[Item]:
-    return _closest_recent_items_to_reference(position, memory)
-
 def closest_packs(position: Vector3, memory: Dict[int, Pack]) -> List[Pack]:
-    return _closest_recent_items(position, memory)
+    return _closest_recent_items_to_reference(position, memory, PACK_TIME_LOCALITY)
 
 def raycast(origin: Vector3, direction: Vector3, targets: List[Vector3], radius: float) -> int:
     """Casts a ray from the origin position in a given direction, and checks whether it would hit spheres located at targets with a given radius.
@@ -157,13 +155,13 @@ def raycast(origin: Vector3, direction: Vector3, targets: List[Vector3], radius:
     # flattening to two dimensions
     origin = np.array([origin[0],origin[2]])
     direction = np.array([direction[0],direction[2]])
-    targets = [np.array([t[0],t[2]]) for t in targets]
-    targets_sorted = sorted(targets,key=lambda x: np.linalg.norm(origin - x))
+    targets = [(i, np.array([t[0],t[2]])) for i,t in enumerate(targets)]
+    targets_sorted = sorted(targets,key=lambda x: np.linalg.norm(origin - x[-1]))
     dirnorm = np.linalg.norm(direction)
-    for t in targets_sorted:
+    for i,t in targets_sorted:
         d = np.cross(direction, t - origin)/dirnorm
         if d <= radius:
-            return targets.find(t)
+            return i
     return -1
     
 def common_init(agent: BDITroop, *args, **kwargs):
@@ -180,9 +178,8 @@ def define_common_actions(agent: BDITroop, actions: Actions):
     def _get_now():
         return time.time()
     
-    @actions.add_function(".can_shoot", (Tuple))
-    def _can_shoot(pos: Vector3) -> False:
-        mypos = here()
+    @actions.add_function(".can_shoot", (Tuple, Tuple))
+    def _can_shoot(pos: Vector3, target: Vector3) -> False:
         fov_objects : List[Sight] = agent.fov_objects
         friends : List[Vector3] = []
         enemies : List[Vector3] = []
@@ -197,7 +194,7 @@ def define_common_actions(agent: BDITroop, actions: Actions):
                 enemies.append(vec3)
         
         all_positions = friends + enemies
-        hit_index = raycast(mypos, vec_sub(pos,mypos), all_positions, TROOP_RADIUS)
+        hit_index = raycast(pos, vec_sub(target,pos), all_positions, TROOP_RADIUS)
         if hit_index < 0:
             return False
         return hit_index >= len(friends)
@@ -223,11 +220,19 @@ def define_common_actions(agent: BDITroop, actions: Actions):
         mem[pos] = p
         return True
     
+    @actions.add_function(".nearest_health_pack", (Tuple,))
+    def _nearest_health_pack(position: Vector3):
+        return closest_packs(position, agent.health_pack_memory)
+    
+    @actions.add_function(".nearest_ammo_pack", (Tuple,))
+    def _nearest_ammo_pack(position: Vector3):
+        return closest_packs(position, agent.ammo_pack_memory)
+    
     @actions.add_function(".distance", (Tuple, Tuple))
     def _distance(v_a: Vector3, v_b: Vector3):
         return sqrt(vec_norm_squared(vec_sub(v_a,v_b)))
     
-    @actions.add_function(".str", (any))
+    @actions.add_function(".str", (object,))
     def _str(obj: any):
         return str(obj)
         

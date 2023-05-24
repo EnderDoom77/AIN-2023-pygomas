@@ -53,11 +53,11 @@ state("defending").
 +enemies_in_fov(ID,Type,Angle,Distance,Health,Position) <-
     .now(Now);
     ?position(MyPos);
-    if (my_commander(Comm) & position = [X,Y,Z]) {
+    if (my_commander(Comm) & Position = [X,Y,Z]) {
         .send(Comm, tell, enemy_seen(X,Y,Z,Health,Type));
     }
 
-    .can_shoot(Position, CanShoot);
+    .can_shoot(MyPos, Position, CanShoot);
     if (CanShoot) {
-        .shoot(Position, 10);
+        .shoot(10, Position);
     }.

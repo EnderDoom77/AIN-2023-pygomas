@@ -1,6 +1,6 @@
 //EJEMPLO LUCHADOR 
 
-+flag(F): team(200)
++flag(F)
   <-
   .create_control_points(F,100,3,C);
   +control_points(C);

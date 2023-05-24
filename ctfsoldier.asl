@@ -11,7 +11,7 @@ low_health(50).
 
 +!update <-
     if (my_commander(Comm)) {
-        .print("Fieldop Reporting to", Comm);
+        .print("Soldier Reporting to", Comm);
         ?position([X,Y,Z]);
         ?health(HP);
         .send(Comm, tell, teamdata(X, Y, Z, HP, 201));
@@ -96,7 +96,7 @@ low_health(50).
 
 +!fetch_ammo : position(Pos) <-
     .nearest_ammo_pack(Pos, PackPos);
-    +!fetch(PackPos,1002).
+    !fetch(PackPos,1002).
 
 +!fetch(PackPos, PackType) : state(State) <-
     if (not PackPos = [-1,-1,-1]) {
@@ -126,17 +126,17 @@ low_health(50).
 +!attack([AX,AY,AZ]) : position(X,Y,Z) & state(State) <-
     -state(State);
     +state("attacking");
-    .goto([X * 0.5 + AX * 0.5, AY, AZ * 0.5 + Z * 0.5]);
+    .goto([X * 0.5 + AX * 0.5, AY, AZ * 0.5 + Z * 0.5]).
 
-+attack_target(X,Y,Z):
++attack_target(X,Y,Z) <-
     .print("Received command to attack", [X,Y,Z]);
     +attacking([X,Y,Z]).
 
 +enemies_in_fov(ID,Type,Angle,Distance,Health,Position) : last_shot(LastShot) <-
     .now(Now);
     ?position(MyPos);
-    if (my_commander(Comm) & position = [X,Y,Z]) {
-        .send(Comm, tell, enemy_seen(X,Y,Z,Health,Type)).
+    if (my_commander(Comm) & Position = [X,Y,Z]) {
+        .send(Comm, tell, enemy_seen(X,Y,Z,Health,Type));
     }
 
     .can_shoot(MyPos, Position, CanShoot);
@@ -144,15 +144,17 @@ low_health(50).
         if (attacking(AttackPos)) {
             .distance(Position, AttackPos, Dist);
             if (Dist < 5) {
-                .shoot(Position, 10);
+                .shoot(10, Position);
                 -last_shot(LastShot);
                 +last_shot(Now);
+            } else {
+                if (Now - LastShot > 1) {
+                    .shoot(10, Position);
+                    !attack(Position);
+                } 
             }
-            if (Now - LastShot > 1) {
-                .shoot(Position, 10);
-            } 
         } else {
-            .shoot(Position, 10);
+            .shoot(10, Position);
         }
     }.
     
