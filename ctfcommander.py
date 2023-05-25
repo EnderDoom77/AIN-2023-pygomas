@@ -59,7 +59,7 @@ class CTFCommander(BDIMedic):
         
         @actions.add(".register_position", 4)
         def _register_position(agent, term, intention):
-            print("START Register position")
+            #print("START Register position")
             args = grounded(term.args, intention.scope)
             # args -> (Agent, Position, Health, Type)
             ag, pos, hp, troop_type = tuple(args)
@@ -71,7 +71,8 @@ class CTFCommander(BDIMedic):
                 mem[ag].health = hp
             else:
                 mem[ag] = Troop(len(mem),time.time(),pos,troop_type,hp,-1)
-            print("END Register position")
+            #print("END Register position")
+            yield
             
         @actions.add(".register_enemy", 3)
         def _handle_enemy(agent, term, intention):
@@ -81,6 +82,7 @@ class CTFCommander(BDIMedic):
             new_id = get_compatible_item_or_new(pos, self.enemy_memory, 15, lambda x: x.type == troop_type)
             t = Troop(new_id, time.now(), pos, troop_type, hp, -1)
             self.enemy_memory[id] = t
+            yield
         
         @actions.add_function(".get_team", ())
         def _get_team():

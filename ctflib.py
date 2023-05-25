@@ -195,15 +195,18 @@ def define_common_actions(agent: BDITroop, actions: Actions):
         
         all_positions = friends + enemies
         hit_index = raycast(pos, vec_sub(target,pos), all_positions, TROOP_RADIUS)
-        if hit_index < 0:
-            return False
-        return hit_index >= len(friends)
+        
+        value = hit_index < 0 or hit_index >= len(friends)
+        if (not value):
+            print(f"Soldier at position {pos} would hit friend at position {friends[hit_index]} if shooting {target}")
+        return value
     
     @actions.add(".pack_taken", 2)
     def _pack_used(pos: Vector3, pack_type: PackType):
         mem = agent.health_pack_memory if pack_type == PACK_MEDICPACK else agent.ammo_pack_memory
         if pos in mem:
             del mem[pos]
+        yield
     
     @actions.add_function(".random_point_around", (Tuple, float, float))
     def _random_point_around(pos: Vector3, min_dist: float, max_dist: float):

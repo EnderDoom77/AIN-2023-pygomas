@@ -12,7 +12,7 @@ last_attack(0).
 +!update
   <-
   .update([]);
-  .print("I'm alive");
+  //.print("I'm alive");
   .wait(500);
   if (target_reached(_) & position(Pos)) {
     .random_point_around(Pos, 10, 10, RandPos);
@@ -20,11 +20,11 @@ last_attack(0).
   }
   !update.
 
-+teamdata(X,Y,Z,Health,Type)[source(A)]
++teamdata([X,Y,Z,Health,Class])[source(A)]
   <-
-  .print("Received status");
-  .register_position(A, [X,Y,Z], Health, Type);
-  -teamdata(_,_,_,_).
+  //.print("Received status");
+  .register_position(A, [X,Y,Z], Health, Class);
+  -teamdata(_,_,_,_,_).
 
 +pack_seen(X,Y,Z,Type)
   <-

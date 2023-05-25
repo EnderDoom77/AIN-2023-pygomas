@@ -11,10 +11,11 @@ low_health(50).
 
 +!update <-
     if (my_commander(Comm)) {
-        .print("Soldier Reporting to", Comm);
+        //.print("Soldier Reporting to", Comm);
         ?position([X,Y,Z]);
         ?health(HP);
-        .send(Comm, tell, teamdata(X, Y, Z, HP, 201));
+        ?class(Class);
+        .send(Comm, tell, teamdata([X, Y, Z, HP, Class]));
     }
     .now(Now);
     if (last_shot(LastShot) & Now - LastShot > 5 & state("attacking") & not enemies_in_fov(_,_,_,_,_,_)) {
@@ -26,8 +27,7 @@ low_health(50).
 +commander(CommList): not CommList == [] <-
     .nth(0, CommList, X);
     .print("Registered commander,", X);
-    .str(X, XStr);
-    +my_commander(XStr).
+    +my_commander(X).
 
 +commander([]) <-
     .wait(500);
@@ -91,22 +91,22 @@ low_health(50).
     }.
 
 +!fetch_health : position(Pos) <-
-    .nearest_health_pack(Pos, PackPos);
-    !fetch(PackPos,1001).
+    .nearest_health_pack(Pos, [PX,PY,PZ]);
+    !fetch(PX,PY,PZ,1001).
 
 +!fetch_ammo : position(Pos) <-
-    .nearest_ammo_pack(Pos, PackPos);
-    !fetch(PackPos,1002).
+    .nearest_ammo_pack(Pos, [PX,PY,PZ]);
+    !fetch(PX,PY,PZ,1002).
 
-+!fetch(PackPos, PackType) : state(State) <-
-    if (not PackPos = [-1,-1,-1]) {
++!fetch(PX,PY,PZ, PackType) : state(State) <-
+    if (PX >= 0 && PY >= 0 && PZ >= 0) {
         // remove all outstanding fetching positions
         for (fetching(AnyPos, AnyType)) {
             -fetching(AnyPos, AnyType);
         }
         -state(State);
         +state("fetching");
-        +fetching(PackPos, 1002);
+        +fetching([PX,PY,PZ], PackType);
         .goto(PackPos);
     } else {
         if (fetching(PrevPos, PrevType)) {

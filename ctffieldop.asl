@@ -8,10 +8,11 @@ my_station([0,0,0]).
 
 +!update <-
     if (my_commander(Comm)) {
-        .print("Fieldop Reporting to", Comm);
+        //.print("Fieldop Reporting to", Comm);
         ?position([X,Y,Z]);
         ?health(HP);
-        .send(Comm, tell, teamdata(X, Y, Z, HP, 203));
+        ?class(Class);
+        .send(Comm, tell, teamdata([X, Y, Z, HP, Class]));
     }
     .now(Now);
     if (last_shot(LastShot) & Now - LastShot > 5 & state("attacking") & not enemies_in_fov(_,_,_,_,_,_)) {

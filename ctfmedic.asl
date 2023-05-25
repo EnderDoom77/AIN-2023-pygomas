@@ -8,7 +8,7 @@ state("defending").
 
 +commander(CommList): not CommList == [] <-
     .nth(0, CommList, X);
-    .print("Registered commander,", X);
+    //.print("Registered commander,", X);
     +my_commander(X).
 
 +commander([]) <-
@@ -32,8 +32,9 @@ state("defending").
     if (my_commander(Comm)) {
         ?position([X,Y,Z]);
         ?health(HP);
-        .print("Medic Reporting position", [X,Y,Z], "and health", HP, "to", Comm);
-        .send(Comm, tell, teamdata(X, Y, Z, HP, 502));
+        ?class(Class);
+        //.print("Medic Reporting position", [X,Y,Z], "and health", HP, "to", Comm);
+        .send(Comm, tell, teamdata([X, Y, Z, HP, Class]));
     }
     if (target_reached(_)) {
         .cure;

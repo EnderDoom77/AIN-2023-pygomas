@@ -40,7 +40,7 @@
             "name": "fighter_mfabgom",
             "password": "secret",
             "amount": 10,
-            "asl": "fighter.asl"
+            "asl": "ctf_fighter.asl"
         }
     ]
 }
