@@ -79,14 +79,11 @@ class CTFCommander(BDIMedic):
             args = grounded(term.args, intention.scope)
             # args -> (Position, Health, Type)
             pos, hp, troop_type = tuple(args)
-            new_id = get_compatible_item_or_new(pos, self.enemy_memory, 15, lambda x: x.type == troop_type)
-            t = Troop(new_id, time.now(), pos, troop_type, hp, -1)
-            self.enemy_memory[id] = t
+            t = Troop(-1, time.time(), pos, troop_type, hp, -1)
+            new_id = get_compatible_item_or_new(t, self.enemy_memory, 15, lambda x: x.type == troop_type)
+            t.id = new_id
+            self.enemy_memory[t.id] = t
             yield
-        
-        @actions.add_function(".get_team", ())
-        def _get_team():
-            return tuple(self.ally_memory.keys())
         
         @actions.add_function(".get_circular_formation", (Tuple, float, Tuple))
         def _get_circular_formation(center: Vector3, radius: float, agents: Sized):

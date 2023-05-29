@@ -42,21 +42,21 @@ state("defending").
     .wait(500);
     !update.
 
-+packs_in_fov(ID,Type,Angle,Distance,Health,[X,Y,Z]): not Type = 1003 <-
++packs_in_fov(ID,Type,Angle,Distance,Health,[X,Y,Z]): Type > 1000 & Type < 1003 <-
     .register_pack([X,Y,Z], Type, IsNew);
     if (IsNew & my_commander(Comm)) {
-        .send(Comm, tell, pack_seen(X,Y,Z,Type));
+        .send(Comm, tell, pack_seen([X,Y,Z,Type]));
     }.
 
-+new_pack(X,Y,Z,Type) <-
++new_pack([X,Y,Z,Type]) <-
     .register_pack([X,Y,Z],Type,_).
 
 +enemies_in_fov(ID,Type,Angle,Distance,Health,[X,Y,Z]) <-
     .now(Now);
     ?position(MyPos);
-    .print("Enemy detected at position ", [X,Y,Z]);
+    //.print("Enemy detected at position ", [X,Y,Z]);
     if (my_commander(Comm)) {
-        .send(Comm, tell, enemy_seen(X,Y,Z,Health,Type));
+        .send(Comm, tell, enemy_seen([X,Y,Z,Health,Type]));
     }
 
     .can_shoot(MyPos, [X,Y,Z], CanShoot);

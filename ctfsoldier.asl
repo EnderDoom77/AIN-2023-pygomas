@@ -33,8 +33,8 @@ low_health(50).
     .wait(500);
     .get_service("commander").
 
-+new_pack(X, Y, Z, Type) <-
-    .print("Pack of type", Type, "registered by message at (", X, ",", Y, ",", Z, ")");
++new_pack([X,Y,Z,Type]) <-
+    //.print("Pack of type", Type, "registered by message at (", X, ",", Y, ",", Z, ")");
     .register_pack([X,Y,Z], Type, _).
 
 +defend_position(Pos): state(State) & my_station(Station)
@@ -52,11 +52,11 @@ low_health(50).
     <-
     .look_at([2*X-FX, Y, 2*Z-FZ]).
 
-+target_reached(Pos): fetching(FPos, FType) & state("recovering")
++target_reached(Pos): fetching([FX,FY,FZ], FType) & state("recovering")
     <-
-    .pack_taken(FPos, FType);
+    .pack_taken([FX,FY,FZ], FType);
     if (my_commander(Comm)) {
-        .send(Comm, tell, pack_taken(FPos, FType));
+        .send(Comm, tell, pack_taken([FX,FY,FZ,FType]));
     }
     !reset.
 
@@ -100,6 +100,7 @@ low_health(50).
     !fetch(PX,PY,PZ,1002).
 
 +!fetch(PX,PY,PZ, PackType) : state(State) <-
+    .print("Fetching pack of type", PackType, "at position", [PX,PY,PZ]);
     if (PX >= 0 & PY >= 0 & PZ >= 0) {
         // remove all outstanding fetching positions
         for (fetching(AnyPos, AnyType)) {
@@ -124,28 +125,29 @@ low_health(50).
     +state("defending");
     .goto(Pos).
 
-+!attack([AX,AY,AZ]) : position(X,Y,Z) & state(State) <-
++!attack([AX,AY,AZ]) : position([X,Y,Z]) & state(State) <-
     -state(State);
     +state("attacking");
     .goto([X * 0.5 + AX * 0.5, AY, AZ * 0.5 + Z * 0.5]).
 
-+attack_target(X,Y,Z) <-
++attack_target([X,Y,Z]) <-
     .print("Received command to attack", [X,Y,Z]);
+    -attacking(_);
     +attacking([X,Y,Z]).
 
 +enemies_in_fov(ID,Type,Angle,Distance,Health,[X,Y,Z]) : last_shot(LastShot) <-
     .now(Now);
     ?position(MyPos);
-    .print("Enemy detected at position ", [X,Y,Z]);
+    //.print("Enemy detected at position ", [X,Y,Z]);
     if (my_commander(Comm)) {
-        .send(Comm, tell, enemy_seen(X,Y,Z,Health,Type));
+        .send(Comm, tell, enemy_seen([X,Y,Z,Health,Type]));
     }
 
     .can_shoot(MyPos, [X,Y,Z], CanShoot);
     if (CanShoot) {
         if (attacking(AttackPos)) {
             .distance([X,Y,Z], AttackPos, Dist);
-            if (Dist < 5) {
+            if (Dist < 8) {
                 .shoot(10, [X,Y,Z]);
                 -last_shot(LastShot);
                 +last_shot(Now);
@@ -156,7 +158,7 @@ low_health(50).
                 } 
             }
         } else {
-            .shoot(10, Position);
+            .shoot(10, [X,Y,Z]);
         }
     }.
     
