@@ -86,7 +86,7 @@ class CTFCommander(BDIMedic):
         
         @actions.add_function(".get_team", ())
         def _get_team():
-            return self.ally_memory.keys()
+            return tuple(self.ally_memory.keys())
         
         @actions.add_function(".get_circular_formation", (Tuple, float, Tuple))
         def _get_circular_formation(center: Vector3, radius: float, agents: Sized):

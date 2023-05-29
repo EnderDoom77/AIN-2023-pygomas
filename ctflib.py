@@ -22,7 +22,7 @@ TIME_LOCALITY = 1
 PACK_TIME_LOCALITY = 0.05
 PERSISTENCE = 10
 
-TROOP_RADIUS = 10
+TROOP_RADIUS = 3
 
 class Item:
     def __init__(self, id: int, last_seen: float, position: Vector3):
@@ -38,6 +38,10 @@ class Item:
         }
         
 class Pack(Item):
+    @staticmethod
+    def null():
+        return Pack(-1, -1, (-1,-1,-1), -1)
+    
     def __init__(self, id:int, last_seen: float, position: Vector3, type: PackType):
         super().__init__(id, last_seen, position)
         self.type = type
@@ -146,6 +150,13 @@ def _closest_recent_items_to_reference(position: Vector3, memory: Dict[int, Item
 def closest_packs(position: Vector3, memory: Dict[int, Pack]) -> List[Pack]:
     return _closest_recent_items_to_reference(position, memory, PACK_TIME_LOCALITY)
 
+def closest_pack(position: Vector3, memory: Dict[int, Pack]) -> Pack:
+    res = closest_packs(position, memory)
+    if res == []:
+        return Pack.null()
+    else:
+        return res[0]
+
 def raycast(origin: Vector3, direction: Vector3, targets: List[Vector3], radius: float) -> int:
     """Casts a ray from the origin position in a given direction, and checks whether it would hit spheres located at targets with a given radius.
 
@@ -225,11 +236,11 @@ def define_common_actions(agent: BDITroop, actions: Actions):
     
     @actions.add_function(".nearest_health_pack", (Tuple,))
     def _nearest_health_pack(position: Vector3):
-        return closest_packs(position, agent.health_pack_memory)
+        return closest_pack(position, agent.health_pack_memory).position
     
     @actions.add_function(".nearest_ammo_pack", (Tuple,))
     def _nearest_ammo_pack(position: Vector3):
-        return closest_packs(position, agent.ammo_pack_memory)
+        return closest_pack(position, agent.ammo_pack_memory).position
     
     @actions.add_function(".distance", (Tuple, Tuple))
     def _distance(v_a: Vector3, v_b: Vector3):

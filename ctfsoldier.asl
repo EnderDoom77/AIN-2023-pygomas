@@ -34,6 +34,7 @@ low_health(50).
     .get_service("commander").
 
 +new_pack(X, Y, Z, Type) <-
+    .print("Pack of type", Type, "registered by message at (", X, ",", Y, ",", Z, ")");
     .register_pack([X,Y,Z], Type, _).
 
 +defend_position(Pos): state(State) & my_station(Station)
@@ -99,7 +100,7 @@ low_health(50).
     !fetch(PX,PY,PZ,1002).
 
 +!fetch(PX,PY,PZ, PackType) : state(State) <-
-    if (PX >= 0 && PY >= 0 && PZ >= 0) {
+    if (PX >= 0 & PY >= 0 & PZ >= 0) {
         // remove all outstanding fetching positions
         for (fetching(AnyPos, AnyType)) {
             -fetching(AnyPos, AnyType);
@@ -132,25 +133,26 @@ low_health(50).
     .print("Received command to attack", [X,Y,Z]);
     +attacking([X,Y,Z]).
 
-+enemies_in_fov(ID,Type,Angle,Distance,Health,Position) : last_shot(LastShot) <-
++enemies_in_fov(ID,Type,Angle,Distance,Health,[X,Y,Z]) : last_shot(LastShot) <-
     .now(Now);
     ?position(MyPos);
-    if (my_commander(Comm) & Position = [X,Y,Z]) {
+    .print("Enemy detected at position ", [X,Y,Z]);
+    if (my_commander(Comm)) {
         .send(Comm, tell, enemy_seen(X,Y,Z,Health,Type));
     }
 
-    .can_shoot(MyPos, Position, CanShoot);
+    .can_shoot(MyPos, [X,Y,Z], CanShoot);
     if (CanShoot) {
         if (attacking(AttackPos)) {
-            .distance(Position, AttackPos, Dist);
+            .distance([X,Y,Z], AttackPos, Dist);
             if (Dist < 5) {
-                .shoot(10, Position);
+                .shoot(10, [X,Y,Z]);
                 -last_shot(LastShot);
                 +last_shot(Now);
             } else {
                 if (Now - LastShot > 1) {
-                    .shoot(10, Position);
-                    !attack(Position);
+                    .shoot(10, [X,Y,Z]);
+                    !attack([X,Y,Z]);
                 } 
             }
         } else {

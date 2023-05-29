@@ -30,7 +30,7 @@ last_attack(0).
   <-
   .register_pack([X,Y,Z], Type, IsNew);
   if (IsNew) {
-    .print("New pack of type,", Type, "detected at", Position);
+    .print("New pack of ", Type, "detected at", [X,Y,Z]);
     !broadcast(new_pack(X,Y,Z,Type));
   }.
 
@@ -44,9 +44,13 @@ last_attack(0).
 
 +!schedule_attack([X,Y,Z]) <-
   .get_team(Allies);
+  .print("Commanding attack on position", [X,Y,Z], "for allies", Allies);
   for (.member(A, Allies)) {
     .send(M, tell, attack_target(X,Y,Z));
-  }.
+  }
+  .now(Now);
+  -last_attack(_);
+  +last_attack(Now).
 
 +!broadcast(Msg) <-
   .print("Broadcasting", Msg);
@@ -57,7 +61,7 @@ last_attack(0).
 
 +packs_in_fov(ID, Type, Angle, Distance, Value, [X,Y,Z]): Type < 1003
   <-
-  .print("Pack of type", Type, "in fov at", [X,Y,Z]);
+  //.print("Pack of type", Type, "in fov at", [X,Y,Z]);
   +pack_seen(X,Y,Z,Type).
 
 +!command_circle
