@@ -21,6 +21,9 @@ low_health(50).
     if (last_shot(LastShot) & Now - LastShot > 5 & state("attacking") & not enemies_in_fov(_,_,_,_,_,_)) {
         !retreat;
     }
+    if (target_reached(_)) { 
+        .reload; /*Does nothing for soldiers*/
+    }
     .wait(500);
     !update.
 
@@ -161,4 +164,3 @@ low_health(50).
             .shoot(10, [X,Y,Z]);
         }
     }.
-    

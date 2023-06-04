@@ -30,3 +30,8 @@ class CTFSoldier(BDISoldier):
     def add_custom_actions(self, actions : Actions):
         super().add_custom_actions(actions)
         define_common_actions(self, actions)
+        
+        # This exists for the purpose of having transparent equivalent logic for fieldops and soldiers
+        @actions.add(".reload",0)
+        def _do_nothing(*args):
+            yield

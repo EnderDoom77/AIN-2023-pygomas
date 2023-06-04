@@ -24,14 +24,14 @@
             "name": "fieldop_pryme",
             "password": "secret",
             "amount": 3,
-            "asl": "ctffieldop.asl"
+            "asl": "ctfguard.asl"
         },
         {
             "rank": "ctfsoldier.CTFSoldier",
             "name": "soldier_pryme",
             "password": "secret",
             "amount": 4,
-            "asl": "ctfsoldier.asl"
+            "asl": "ctfguard.asl"
         }
     ],
      "allied": [

@@ -127,7 +127,7 @@ low_health(75).
         -state(State);
         +state("fetching");
         +fetching([PX,PY,PZ], PackType);
-        .goto(PackPos);
+        .goto([PX,PY,PZ]);
     } else {
         if (fetching(PrevPos, PrevType)) {
             .goto(PrevPos);
