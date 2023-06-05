@@ -242,6 +242,11 @@ def define_common_actions(agent: BDITroop, actions: Actions):
     def _nearest_ammo_pack(position: Vector3):
         return closest_pack(position, agent.ammo_pack_memory).position
     
+    @actions.add_function(".is_walkable", (Tuple,))
+    def _is_point_walkable(position: Vector3):
+        x,y,z = position
+        return bool(agent.check_static_position(x,z))
+    
     @actions.add_function(".distance", (Tuple, Tuple))
     def _distance(v_a: Vector3, v_b: Vector3):
         return sqrt(vec_norm_squared(vec_sub(v_a,v_b)))

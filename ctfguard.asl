@@ -40,39 +40,33 @@ low_health(50).
     //.print("Pack of type", Type, "registered by message at (", X, ",", Y, ",", Z, ")");
     .register_pack([X,Y,Z], Type, _).
 
-+defend_position(Pos): state(State) & my_station(Station)
-    <-
++defend_position(Pos): state(State) & my_station(Station) & flag(FlagPos) <-
     -my_station(Station);
     +my_station(Pos);
     if (not State = "recovering") {
         -state(State);
         +state("defending");
-        .goto(Pos);
+        !move(Pos, FlagPos);
         .print("Defending position", Pos);
     }.
 
-+target_reached([X,Y,Z]): flag([FX,FY,FZ]) & state("defending")
-    <-
++target_reached([X,Y,Z]): flag([FX,FY,FZ]) & state("defending") <-
     .look_at([2*X-FX, Y, 2*Z-FZ]).
 
-+target_reached(Pos): fetching([FX,FY,FZ], FType) & state("recovering")
-    <-
++target_reached(Pos): fetching([FX,FY,FZ], FType) & state("recovering") <-
     .pack_taken([FX,FY,FZ], FType);
     if (my_commander(Comm)) {
         .send(Comm, tell, pack_taken([FX,FY,FZ,FType]));
     }
     !reset.
 
-+health(HP): low_health(LHP) & HP < LHP & not bloody
-    <-
++health(HP): low_health(LHP) & HP < LHP & not bloody <-
     +bloody.
 
-+health(HP): low_health(LHP) & HP > LHP & bloody
-    <-
++health(HP): low_health(LHP) & HP > LHP & bloody <-
     -bloody.
 
-+bloody: state(State)
-    <-
++bloody: state(State) <-
     !reset.
 
 +ammo(Ammo): Ammo < 10 & not bloody <-
@@ -106,13 +100,11 @@ low_health(50).
     .print("Fetching pack of type", PackType, "at position", [PX,PY,PZ]);
     if (PX >= 0 & PY >= 0 & PZ >= 0) {
         // remove all outstanding fetching positions
-        for (fetching(AnyPos, AnyType)) {
-            -fetching(AnyPos, AnyType);
-        }
+        -fetching(_,_);
         -state(State);
         +state("fetching");
         +fetching([PX,PY,PZ], PackType);
-        .goto(PackPos);
+        .goto([PX,PY,PZ]);
     } else {
         if (fetching(PrevPos, PrevType)) {
             .goto(PrevPos);
@@ -123,20 +115,36 @@ low_health(50).
         }
     }.
 
-+!retreat : my_station(Pos) & state(State) <-
++!retreat : my_station(Pos) & state(State) & flag(FlagPos) <-
     -state(State);
     +state("defending");
-    .goto(Pos).
+    !move(Pos, FlagPos).
 
-+!attack([AX,AY,AZ]) : position([X,Y,Z]) & state(State) <-
++!move([X,Y,Z]) : position([CurrentX, CurrentY, CurrentZ]) <-
+    !move([X,Y,Z], [CurrentX, CurrentY, CurrentZ]).
+
++!move([X,Y,Z], [BiasX, BiasY, BiasZ]) <-
+    .is_walkable([X,Y,Z], Walkable);
+    if (Walkable) {
+        .goto([X,Y,Z]);
+    } else {
+        !move([X * 0.8 + BiasX * 0.2, BiasY, Z * 0.8 + BiasZ * 0.2]);
+    }.
+
++!attack([AX,AY,AZ]) : position([X,Y,Z]) & state(State) & not State = "fetching" <-
     -state(State);
     +state("attacking");
-    .goto([X * 0.5 + AX * 0.5, AY, AZ * 0.5 + Z * 0.5]).
+    .distance([X,Y,Z], [AX,AY,AZ], Dist);
+    if (Dist > 25) {
+        !move([X * 0.75 + AX * 0.25, AY, Z * 0.75 + AZ * 0.25]);
+    }.
 
 +attack_target([X,Y,Z]) <-
     .print("Received command to attack", [X,Y,Z]);
+    .look_at([X,Y,Z]);
     -attacking(_);
-    +attacking([X,Y,Z]).
+    +attacking([X,Y,Z]);
+    !attack([X,Y,Z]).
 
 +enemies_in_fov(ID,Type,Angle,Distance,Health,[X,Y,Z]) : last_shot(LastShot) <-
     .now(Now);
@@ -148,6 +156,8 @@ low_health(50).
 
     .can_shoot(MyPos, [X,Y,Z], CanShoot);
     if (CanShoot) {
+        .shoot(10, [X,Y,Z]); //simplified behaviour
+        /*
         if (attacking(AttackPos)) {
             .distance([X,Y,Z], AttackPos, Dist);
             if (Dist < 8) {
@@ -157,10 +167,12 @@ low_health(50).
             } else {
                 if (Now - LastShot > 1) {
                     .shoot(10, [X,Y,Z]);
-                    !attack([X,Y,Z]);
+                    -attacking(_);
+                    +attacking([X,Y,Z]);
                 } 
             }
         } else {
             .shoot(10, [X,Y,Z]);
         }
+        */
     }.

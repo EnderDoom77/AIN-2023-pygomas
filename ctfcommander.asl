@@ -13,8 +13,7 @@ low_health(75).
     .wait(1000);
     !command_circle.
 
-+!update
-    <-
++!update <-
     .update([]);
     //.print("I'm alive");
     .wait(500);
@@ -22,14 +21,14 @@ low_health(75).
         .random_point_around(Pos, 10, 10, RandPos);
         .look_at(RandPos);
     }
+    .get_service("axis");
     !update.
 
 // ################
 // # COORDINATION #
 // ################
 
-+teamdata([X,Y,Z,Health,Class])[source(A)]
-    <-
++teamdata([X,Y,Z,Health,Class])[source(A)] <-
     //.print("Received status");
     .register_position(A, [X,Y,Z], Health, Class);
     if (not ally(A)) {
@@ -37,8 +36,16 @@ low_health(75).
     }
     -teamdata(_,_,_,_,_).
 
-+pack_seen([X,Y,Z,Type])
-    <-
++axis(Allies) <-
+    //.print("Updating set of allies");
+    -ally(_);
+    for (.member(A, Allies)) {
+        //.print("Registering ally", A);
+        +ally(A);
+    };
+    -axis(Allies).
+
++pack_seen([X,Y,Z,Type]) <-
     .register_pack([X,Y,Z], Type, IsNew);
     if (IsNew) {
         .print("New pack of ", Type, "detected at", [X,Y,Z]);
@@ -70,13 +77,11 @@ low_health(75).
         .send(A, tell, Msg);
     }.
 
-+packs_in_fov(ID, Type, Angle, Distance, Value, [X,Y,Z]): Type < 1003
-    <-
++packs_in_fov(ID, Type, Angle, Distance, Value, [X,Y,Z]): Type < 1003 <-
     //.print("Pack of type", Type, "in fov at", [X,Y,Z]);
     +pack_seen([X,Y,Z,Type]).
 
-+!command_circle
-    <-
++!command_circle <-
     +guard_command("circle");
     .get_service("guard").
 
@@ -99,12 +104,10 @@ low_health(75).
 // # GENERAL INDIVIDUAL BEHAVIOUR #
 // ################################
 
-+health(HP): low_health(LHP) & HP < LHP & not bloody
-    <-
++health(HP): low_health(LHP) & HP < LHP & not bloody <-
     +bloody.
 
-+health(HP): low_health(LHP) & HP > LHP & bloody
-    <-
++health(HP): low_health(LHP) & HP > LHP & bloody <-
     -bloody.
 
 +bloody <-
@@ -121,9 +124,7 @@ low_health(75).
 +!fetch(PX,PY,PZ,PackType) : state(State) <-
     if (PX >= 0 & PY >= 0 & PZ >= 0) {
         // remove all outstanding fetching positions
-        for (fetching(AnyPos, AnyType)) {
-            -fetching(AnyPos, AnyType);
-        }
+        -fetching(_,_);
         -state(State);
         +state("fetching");
         +fetching([PX,PY,PZ], PackType);
