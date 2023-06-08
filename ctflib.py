@@ -170,7 +170,7 @@ def raycast(origin: Vector3, direction: Vector3, targets: List[Vector3], radius:
     targets_sorted = sorted(targets,key=lambda x: np.linalg.norm(origin - x[-1]))
     dirnorm = np.linalg.norm(direction)
     for i,t in targets_sorted:
-        d = np.cross(direction, t - origin)/dirnorm
+        d = np.abs(np.cross(direction, t - origin)/dirnorm)
         if d <= radius:
             return i
     return -1
